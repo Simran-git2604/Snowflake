@@ -10,26 +10,38 @@ jobs:
     runs-on: windows-latest
 
     env:
-      REPO_NAME: "SnowflakeTest"
-      SNOWSQL_CONFIG: ".snowflake/config.toml"  # Path to your config.toml file
+       REPO_NAME: "SnowflakeTest.public.repo"
+       SNOWFLAKE_ACCOUNT: "${{ secrets.SNOWFLAKE_ACCOUNT }}"
+       SNOWFLAKE_USER: "${{ secrets.SNOWFLAKE_USER }}"
+       SNOWFLAKE_PASSWORD: "${{ secrets.SNOWFLAKE_PASSWORD }}"
+       SNOWFLAKE_WAREHOUSE: "${{ secrets.SNOWFLAKE_WAREHOUSE }}"
+       SNOWFLAKE_DATABASE: "${{ secrets.SNOWFLAKE_DATABASE }}"
 
     steps:
-      # Step 1: Check out the repository
-      - name: Checkout Code
+
+      # Step 1: Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Install SnowSQL
-      - name: Install SnowSQL
+      # Step 2: Install snowflake-cli
+      - name: Install snowflake-cli
+        uses: Snowflake-Labs/snowflake-cli-action@v1.5
+        with:
+          cli-version: "latest"
+          default-config-file-path: ".snowflake/config.toml"
+
+      # Step 3: Fetch repository changes
+      - name: Fetch repository changes
         run: |
-          Invoke-WebRequest -Uri https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/latest/windows_x86_64/snowsql.exe -OutFile "$env:C:\Program Files\snowsql\snowsql.exe"
-          # Add SnowSQL to PATH
-          $env:PATH += ";$env:ProgramFiles\snowsql"
-      
-      # Step 3: Run SQL script using SnowSQL with config.toml
-      - name: Run Pipeline Scripts
-        env:
-          SNOWSQL_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWSQL_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWSQL_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          snow git fetch "%REPO_NAME%"
+
+      # Step 4: Execute extract.sql
+      - name: Execute extract.sql
         run: |
-          snowsql -c $SNOWSQL_CONFIG -f ${{ github.workspace }}/scripts/extract.sql
+          snow sql execute \
+            --account-name "${{ env.SNOWFLAKE_ACCOUNT }}" \
+            --username "${{ env.SNOWFLAKE_USER }}" \
+            --password "${{ env.SNOWFLAKE_PASSWORD }}" \
+            --warehouse "${{ env.SNOWFLAKE_WAREHOUSE }}" \
+            --database "${{ env.SNOWFLAKE_DATABASE }}" \
+            --file ./extract.sql
