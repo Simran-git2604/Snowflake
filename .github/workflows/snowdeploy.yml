@@ -1,0 +1,35 @@
+name: Snowflake Pipeline Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    env:
+      REPO_NAME: "SnowflakeTest"
+      SNOWSQL_CONFIG: ".snowflake/config.toml"  # Path to your config.toml file
+
+    steps:
+      # Step 1: Check out the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Install SnowSQL
+      - name: Install SnowSQL
+        run: |
+          Invoke-WebRequest -Uri https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/latest/windows_x86_64/snowsql.exe -OutFile "$env:C:\Program Files\snowsql\snowsql.exe"
+          # Add SnowSQL to PATH
+          $env:PATH += ";$env:ProgramFiles\snowsql"
+      
+      # Step 3: Run SQL script using SnowSQL with config.toml
+      - name: Run Pipeline Scripts
+        env:
+          SNOWSQL_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWSQL_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWSQL_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: |
+          snowsql -c $SNOWSQL_CONFIG -f ${{ github.workspace }}/scripts/extract.sql
