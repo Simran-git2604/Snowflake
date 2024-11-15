@@ -1,0 +1,8 @@
+[connections.default]
+warehouse = "COMPUTE_WH"
+role = "ACCOUNTADMIN"
+database = "SIMRAN_DB"
+schema = "PUBLIC"
+account = "ECUFJUV.RQ82597"
+user = "YMSLIUSER"
+password = "Omsazure123"
